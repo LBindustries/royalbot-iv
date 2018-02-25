@@ -1,6 +1,9 @@
 import datetime
 import random
+import typing
+
 import discord
+from discord.voice_client import StreamPlayer
 import discord.opus
 import functools
 import sys
@@ -34,10 +37,10 @@ finally:
 # Init the discord bot
 client = discord.Client()
 discord.opus.load_opus("/usr/lib/x86_64-linux-gnu/libopus.so")
-voice_client = None
-voice_player = None
-voice_queue = []
-voice_playing = None
+voice_client = None  # type: typing.Optional[discord.VoiceClient]
+voice_player = None  # type: typing.Optional[StreamPlayer]
+voice_queue = []     # type: typing.List[Video]
+voice_playing = None # type: Video
 
 # Init the executor
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
@@ -48,6 +51,7 @@ class Video:
         self.info = None
         self.enqueued = None
         self.channel = None
+        self.downloaded = False
 
     @staticmethod
     async def init(author, info, enqueued, channel):
@@ -92,9 +96,10 @@ class Video:
                                            "key": 'FFmpegExtractAudio',
                                            "preferredcodec": 'opus'
                                        }],
-                                       "outtmpl": "music.%(ext)s",
+                                       # "outtmpl": "music.%(ext)s",
                                        "quiet": True}) as ytdl:
                 info = await loop.run_in_executor(executor, functools.partial(ytdl.extract_info, self.info["webpage_url"]))
+                ...
         except Exception as e:
             client.send_message(self.channel, f"⚠ Errore durante il download del video:\n"
                                               f"```"
